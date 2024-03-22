@@ -39,6 +39,7 @@ const protectRoute = async(req , res, next)=>{
 
 
 
+
 app.post("/api/register" ,protectRoute, async(req , res)=>{
     const {name  , email , password} = req.body;
     try {
@@ -94,6 +95,17 @@ app.post("/api/login" ,protectRoute , async(req , res)=>{
 
 
 app.get("/api/flights" , async(req , res)=>{
+    try {
+        const flites = await fliteModule.find();
+        res.status(200).send(flites)
+    } catch (error) {
+        console.log("Error From get flites Function  :   "+error)
+    }
+})
+
+
+
+app.get("/" , async(req , res)=>{
     try {
         const flites = await fliteModule.find();
         res.status(200).send(flites)
@@ -226,6 +238,18 @@ app.delete("/api/flights", async (req, res) => {
     }
 });
 
+
+app.delete("/api/booking", async (req, res) => {
+    try {
+        const id = req.query.id; 
+        const data = await bookingModule.findByIdAndDelete(id);
+        console.log('Deleting done');
+        res.status(200).send(data);
+    } catch (error) {
+        console.log('Problem in deleting data: ' + error);
+        res.status(500).send(error.message);
+    }
+});
 
 
 
