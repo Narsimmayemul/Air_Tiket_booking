@@ -25,8 +25,8 @@ const fliteSchema = mongoose.Schema({
 const fliteModule = mongoose.model( "Flight" , fliteSchema );
 
 const bookingSchema = mongoose.Schema({
-    user: { type: Schema.Types.ObjectId, ref: 'User' },
-    flight: { type: Schema.Types.ObjectId, ref: 'Flight' }
+    user: { type: Schema.Types.ObjectId, ref: 'user' },
+    flight: { type: Schema.Types.ObjectId, ref: 'flight' }
 })
 
 const bookingModule = mongoose.model("Booking" , bookingSchema );
