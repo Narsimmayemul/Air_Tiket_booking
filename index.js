@@ -16,8 +16,6 @@ app.use(cookieParser())
 const protectRoute = async(req , res, next)=>{
     try {
         const token = req.cookies.token;
-        // const token = "";
-        // console.log(token)
         if(!token){
             return res.status(401).send({error : "not Authorised  "})
         }
@@ -41,7 +39,7 @@ const protectRoute = async(req , res, next)=>{
 
 
 
-app.post("/api/register" , async(req , res)=>{
+app.post("/api/register" ,protectRoute, async(req , res)=>{
     const {name  , email , password} = req.body;
     try {
     if(!name || !email || !password){
@@ -67,7 +65,7 @@ app.post("/api/register" , async(req , res)=>{
 })
 
 
-app.post("/api/login" , async(req , res)=>{
+app.post("/api/login" ,protectRoute , async(req , res)=>{
     const {email , password} = req.body;
     const user = await userModule.findOne({email:email});
     console.log(user)
@@ -108,12 +106,24 @@ app.get("/api/flights" , async(req , res)=>{
 app.get("/api/flights/:id" , async(req , res)=>{
     const id = req.params.id;
     try {
-        const flites = await fliteModule.findById({id});
+        const flites = await fliteModule.findById(id);
         res.status(200).send(flites);
     } catch (error) {
         console.log("Error From get flites Function  :   "+error)
     }
 })
+
+
+app.get("/api/dashboard" , protectRoute ,async(req , res)=>{
+    try {
+        const flites = await bookingModule.find();
+        res.status(200).send(flites);
+    } catch (error) {
+        console.log("Error From get flites Function  :   "+error)
+    }
+})
+
+
 
 
 app.post("/api/flights" , protectRoute , async(req , res)=>{
@@ -126,12 +136,60 @@ try {
 }
 })
 
-app.put("/api/flights/:id", protectRoute , async(req , res)=>{
-    const id = req.params.id;
+app.post("/api/booking", protectRoute, async (req, res) => {
+    const user = req.user;
+    const flight_id = req.query.id;
+    console.log(flight_id);
+
+    const userData = await userModule.findById(user._id);
+    const flightData = await fliteModule.findById(flight_id)
+    console.log(userData);
+    console.log(flightData)
     try {
+        // const data = { user: user._id, flight: flight_id };
+        await bookingModule.create({user : {} , flight:{airline, flightNo, departure, arrival, departureTime, arrivalTime, seats, price}});
+        res.status(201).send({ user: user._id, flight: flight_id });
+    } catch (error) {
+        console.log('Error from booking post:', error);
+        res.status(500).send(error.message);
+    }
+});
+
+
+
+
+
+app.put("/api/booking", protectRoute, async (req, res) => {
+    try {
+        const id = req.query.id; 
         const data = req.body;
+        console.log(id) 
         const update = await fliteModule.findById(id);
-        console.log(update)
+        if (!update) {
+            return res.status(404).send("Flight not found.");
+        }
+
+        update.flight = data.flight || update.flight;
+       
+        const updatedFlight = await update.save();
+        console.log(updatedFlight)
+        res.status(200).send("data updated");
+    } catch (error) {
+        res.status(500).send(error.message);
+        console.log('Error from flight update:', error);
+    }
+});
+
+
+app.put("/api/flights", protectRoute, async (req, res) => {
+    try {
+        const id = req.query.id; 
+        const data = req.body;
+        console.log(id) 
+        const update = await fliteModule.findById(id);
+        if (!update) {
+            return res.status(404).send("Flight not found.");
+        }
 
         update.airline = data.airline || update.airline;
         update.flightNo = data.flightNo || update.flightNo;
@@ -142,23 +200,31 @@ app.put("/api/flights/:id", protectRoute , async(req , res)=>{
         update.seats = data.seats || update.seats;
         update.price = data.price || update.price;
         
-        const Updated_Data = await update.save();
-        res.status(204).send(Updated_Data);
-} catch (error) {
-    console.log('this error from flights post  :'+error)
-}
-})
+        const updatedFlight = await update.save();
+        console.log(updatedFlight)
+        res.status(200).send("data updated");
+    } catch (error) {
+        res.status(500).send(error.message);
+        console.log('Error from flight update:', error);
+    }
+});
 
 
 
 
 
 
-
-
-
-
-
+app.delete("/api/flights", async (req, res) => {
+    try {
+        const id = req.query.id; 
+        const data = await fliteModule.findByIdAndDelete(id);
+        console.log('Deleting done');
+        res.status(200).send(data);
+    } catch (error) {
+        console.log('Problem in deleting data: ' + error);
+        res.status(500).send(error.message);
+    }
+});
 
 
 
