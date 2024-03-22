@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const {connection , userModule , fliteModule ,bookingModule} = require('./db')
 const cookie = require('cookie');
+const cookieParser = require('cookie-parser');
+app.use(cookieParser())
 
 
 
@@ -13,8 +15,9 @@ const cookie = require('cookie');
 
 const protectRoute = async(req , res, next)=>{
     try {
-        const token = req.cookies.jwt;
+        const token = req.cookies.token;
         // const token = "";
+        // console.log(token)
         if(!token){
             return res.status(401).send({error : "not Authorised  "})
         }
@@ -74,7 +77,7 @@ app.post("/api/login" , async(req , res)=>{
             if(result == true){
                 console.log(result);
                 const token = jwt.sign({userId : user._id} , process.env.Key);
-                res.cookie('token' , token , {
+                res.cookie('token' ,token , {
                     maxAge : 15 * 24 * 60 * 60 * 1000, 
                     httpOnly : true ,
                     sameSite:"strict",
@@ -116,11 +119,77 @@ app.get("/api/flights/:id" , async(req , res)=>{
 app.post("/api/flights" , protectRoute , async(req , res)=>{
     const {airline, flightNo, departure, arrival, departureTime, arrivalTime, seats, price} = req.body;
 try {
-    
+    await fliteModule.create({airline, flightNo, departure, arrival, departureTime, arrivalTime, seats, price});
+    res.status(201).send("data posted");
 } catch (error) {
-    
+    console.log('this error from flights post  :'+error)
 }
 })
+
+// app.put("/api/flights" , protectRoute , async(req , res)=>{
+//     const id = req.params.flight_id;
+//     try {
+//         const data = req.body;
+//         const update = await fliteModule.findById(req.params.flight_id);
+//         console.log(update)
+
+//         update.airline = data.airline || update.airline;
+//         update.flightNo = data.flightNo || update.flightNo;
+//         update.departure = data.departure || update.departure;
+//         update.arrival = data.arrival || update.arrival;
+//         update.departureTime = data.departureTime || update.departureTime;
+//         update.arrivalTime = data.arrivalTime || update.arrivalTime;
+//         update.seats = data.seats || update.seats;
+//         update.price = data.price || update.price;
+        
+//         const Updated_Data = await update.save();
+//         res.status(204).send(Updated_Data);
+// } catch (error) {
+//     console.log('this error from flights post  :'+error)
+// }
+// })
+
+
+app.put("/api/flights/:flight_id", protectRoute, async (req, res) => {
+    try {
+        const flightId = req.params.flight_id;
+        const data = req.body;
+
+        // Find the flight by ID
+        const flight = await fliteModule.findById(flightId);
+
+        // If the flight doesn't exist, return a 404 error
+        if (!flight) {
+            return res.status(404).json({ error: "Flight not found." });
+        }
+
+        // Update flight data with new values from the request body
+        flight.airline = data.airline || flight.airline;
+        flight.flightNo = data.flightNo || flight.flightNo;
+        flight.departure = data.departure || flight.departure;
+        flight.arrival = data.arrival || flight.arrival;
+        flight.departureTime = data.departureTime || flight.departureTime;
+        flight.arrivalTime = data.arrivalTime || flight.arrivalTime;
+        flight.seats = data.seats || flight.seats;
+        flight.price = data.price || flight.price;
+
+        // Save the updated flight data
+        const updatedFlight = await flight.save();
+
+        // Respond with the updated flight data
+        res.status(200).json(updatedFlight);
+    } catch (error) {
+        console.error('Error updating flight:', error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+
+
+
+
+
+
+
 
 
 
